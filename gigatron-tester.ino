@@ -10,7 +10,6 @@ byte g_mode = 0;
 
 void setup()
 {
-  
   // Pin 8-12 output (13 is LED)
   DDRB = 0b00011111;
   // ADC0-5
@@ -38,7 +37,7 @@ void loop()
 
     writeNotification();
   }
-  
+
   switch ( g_mode )
   {
     case 0:
@@ -61,7 +60,7 @@ void loop()
         break;
 
       case 3:
-        // RAM writer        
+        // RAM writer
         // ST #D, Y, X++
         sendInstruction( 0xDC, 0xAA );
         sendInstruction( 0xDC, 0x55 );
@@ -131,9 +130,9 @@ void writeNotification()
       Serial.println( F("Also for U14 pins 1, 2 and 3 (IR5, IR6, IR7: odd bus number blinks separate from even)" ) );
       Serial.println( F("U14 pin 10 and 13 (SUB, OR): should also blink consecutively at full speed." ) );
       Serial.println( F("Finally for U10 pins 2, 4, 6, 8, 11, 13, 15 and 17 (D6, D7, D5, D3, D1, D0, D2 and D4: again, odd/even)" ) );
-      Serial.println( F("Press enter for the next step" ) );     
+      Serial.println( F("Press enter for the next step" ) );
       break;
-      
+
     case 2:
       writeLine();
       // NOTE: the tests are partial
@@ -143,10 +142,10 @@ void writeNotification()
       Serial.println( F("This test will show the blinkenlights (odd and even sequentually every 600ms)" ) );
       Serial.println( F("These are U38 pins 2, 5, 6 and 9, and also the audio DAC (pins 12, 15, 16 and 19)" ) );
       Serial.println( F("Also U37 pins 2, 5, 6, 9, 12, 15, 16 and 19 will show this pattern, but with a different duty cycle" ) );
-      
+
       Serial.println( F("Press enter for the next step" ) );
       break;
-      
+
     case 3:
       // Write 0x55, 0xAA to RAM: Y, X++
       writeLine();
@@ -158,7 +157,6 @@ void writeNotification()
       Serial.println( F( "U36 Pin 10 blinks" ) );
       Serial.println( F( "U36 pins 10 to 3 will blink each at half of the speed of the previous pin..") );
       Serial.println( F( "pins 11, 12, 13, 15, 16, 17, 18 and 19 will blink sequentially and pin 27 will blink fast.") );
-
 
       // Set custom Y register
       // LD #D, X
@@ -178,9 +176,9 @@ void writeNotification()
       // LD #D, X
       sendInstruction( 0x10, 0x00 );
       // LD #D, Y
-      sendInstruction( 0x14, 0xAA );      
+      sendInstruction( 0x14, 0xAA );
       break;
-      
+
     case 5:
       // Read RAM: Y, D
       writeLine();
@@ -190,6 +188,142 @@ void writeNotification()
       Serial.println( F("Press enter for the next step" ) );
       break;
 
+    case 6:
+      writeLine();
+      // XL YL IX EH EL OL LD PL PH     AR0 AR1 AR2 AR3 AL  DE OE AE IE
+      Serial.println( F( "Test instructions (press enter for next instruction)" ) );
+      // al=!R1=!ir7 || !bcc
+      // ar0=!R2=!sub || !bcc
+      // ar1=!r3=!or || !xor || !sub
+      // ar2=!r4=!ld || !or || !xor || !add || !bcc
+      // ar3=!r5=!ld || !and || !or || !add
+
+      writeLine();
+      //XL YL IX EH EL OL LD PL PH
+      Serial.println( F( "LD: 3h=ar3, 5?=ix 7l=ar1, 9h=al, 12l=ar0, 14h=ar2, 16h=LD, 18?=pl " ) );
+
+      sendInstruction( 0b00000000, 0x00 );
+      break;
+
+    case 7:
+      Serial.println( F( "AND: " ) );
+
+      sendInstruction( 0b00100000, 0x00 );
+      break;
+
+    case 8:
+      Serial.println( F( "OR: " ) );
+
+      sendInstruction( 0b01000000, 0x00 );
+      break;
+
+    case 9:
+      Serial.println( F( "XOR: " ) );
+
+      sendInstruction( 0b01100000, 0x00 );
+      break;
+
+    case 10:
+      Serial.println( F( "ADD: " ) );
+
+      sendInstruction( 0b10000000, 0x00 );
+      break;
+
+    case 11:
+      Serial.println( F( "SUB: " ) );
+
+      sendInstruction( 0b10100000, 0x00 );
+      break;
+
+    case 12:
+      Serial.println( F( "ST: " ) );
+
+      sendInstruction( 0b11000000, 0x00 );
+      break;
+
+    case 13:
+      Serial.println( F( "BCC: " ) );
+
+      sendInstruction( 0b11100000, 0x00 );
+      break;
+
+    case 14:
+      writeLine();
+      Serial.println( F( "Test Mode types (press enter for next instruction)" ) );
+      writeLine();
+      Serial.println( F( "[D], AC: " ) );
+
+      sendInstruction( 0b00000000, 0x00 );
+      break;
+
+    case 15:
+      Serial.println( F( "[X], AC: " ) );
+
+      sendInstruction( 0b00000100, 0x00 );
+      break;
+
+    case 16:
+      Serial.println( F( "[Y, D], AC: " ) );
+
+      sendInstruction( 0b00001000, 0x00 );
+      break;
+
+    case 17:
+      Serial.println( F( "[Y, X], AC: " ) );
+
+      sendInstruction( 0b00001100, 0x00 );
+      break;
+
+    case 18:
+      Serial.println( F( "[D], X: " ) );
+
+      sendInstruction( 0b00010000, 0x00 );
+      break;
+
+    case 19:
+      Serial.println( F( "[D], Y: " ) );
+
+      sendInstruction( 0b00010100, 0x00 );
+      break;
+
+    case 20:
+      Serial.println( F( "[D], OUT: " ) );
+
+      sendInstruction( 0b00011000, 0x00 );
+      break;
+
+    case 21:
+      Serial.println( F( "[Y, X++], OUT: " ) );
+
+      sendInstruction( 0b00011100, 0x00 );
+      break;
+
+    case 22:
+      writeLine();
+      Serial.println( F( "Test Bus access" ) );
+      writeLine();
+      Serial.println( F( "DE: Operand to bus" ) );
+
+      sendInstruction( 0b00000000, 0x00 );
+      break;
+
+    case 23:
+      Serial.println( F( "OE: RAM to bus" ) );
+
+      sendInstruction( 0b00000001, 0x00 );
+      break;
+
+    case 24:
+      Serial.println( F( "AE: bus gateway AC/AC to bus" ) );
+
+      sendInstruction( 0b00000010, 0x00 );
+      break;
+
+    case 25:
+      Serial.println( F( "IE: Input to bus" ) );
+
+      sendInstruction( 0b00000011, 0x00 );
+      break;
   }
 }
 
@@ -205,9 +339,9 @@ void sendInstruction( byte _opcode, byte _operand, int _delay /*= DELAY*/ )
   // ADC
   byte adcOpcode = (( _opcode & 0b11000000 ) >> 2 );
   byte adcOperand = ( ( _operand & 0b11100000 ) >> 5 );
-  
+
   byte pc = adcOpcode | adcOperand;
-  
+
   byte pb = (0b00011111 & _operand);
 
   PORTD = pd;
@@ -218,7 +352,7 @@ void sendInstruction( byte _opcode, byte _operand, int _delay /*= DELAY*/ )
 
   // clock
   PORTC |= 0b00001000;
-  
+
   delay( _delay );
 
   // clock
