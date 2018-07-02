@@ -5,7 +5,7 @@ void sendInstruction( byte _opcode, byte _operand, int _delay = DELAY );
 byte g_mode = 0;
 
 #if !defined(ARDUINO_AVR_UNO)
-#error "The pinmapping is opinly tested with Arduino Uno"
+#error "The pinmapping is only tested with Arduino Uno"
 #endif
 
 void setup()
