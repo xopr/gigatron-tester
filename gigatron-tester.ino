@@ -1,11 +1,12 @@
-#define DELAY 100
+#define INSTRUCTION_CLK_DELAY 100
+#define AUTOCLOCK_DELAY 100
 
-void sendInstruction( byte _opcode, byte _operand, int _delay = DELAY );
+void sendInstruction( byte _opcode, byte _operand, int _delay = INSTRUCTION_CLK_DELAY );
 
 byte g_mode = 0;
 
 #if !defined(ARDUINO_AVR_UNO)
-#error "The pinmapping is only tested with Arduino Uno"
+#error "The pinmapping is opinly tested with Arduino Uno"
 #endif
 
 void setup()
@@ -28,14 +29,29 @@ void loop()
     // Cache all bytes
     delay( 20 );
 
+    switch ( Serial.read() )
+    {
+      case 'c':
+        Serial.println( "clocktick" );
+
+        clockTick( AUTOCLOCK_DELAY );
+        break;
+
+      case 'C':
+        // Autoclock
+        Serial.println( "toggle autoclock" );        
+        g_mode = g_mode == 255 ? 0 : 255;
+        break;
+
+      default:
+        // Next mode
+        g_mode++;
+        writeNotification();
+  }
+
     // Read all of the data
     while ( Serial.available() )
       Serial.read();
-
-    // Next mode
-    g_mode++;
-
-    writeNotification();
   }
 
   switch ( g_mode )
@@ -81,10 +97,69 @@ void loop()
         sendInstruction( 0x18, 0b01010101 );
         break;
 
+      case 6:
+      case 7:
+      case 8:
+      case 9:
+      case 10:
+      case 11:
+      case 12:
+      case 13:
+      case 14:
+      case 15:
+      case 16:
+      case 17:
+      case 18:
+      case 19:
+      case 20:
+      case 21:
+      case 22:
+      case 23:
+      case 24:
+      case 25:
+        // Command is set in the notification phase
+        break;
+
+
+      case 255:
+        // autoclock
+        fastClockTick( 1 );
+        break;
+    
     default:
       g_mode = 1;
   }
 }
+
+void clockTick( int _delay )
+{
+  delay( _delay );
+  // clock
+  PORTC &= 0b00110111;
+
+  delay( _delay );
+
+  // clock
+  PORTC |= 0b00001000;
+
+  delayMicroseconds( 100 );
+}
+
+void fastClockTick( int _delay )
+{
+  delayMicroseconds( _delay );
+  //__asm__ __volatile__ ("nop\n\t");
+  // clock
+  PORTC &= 0b00110111;
+
+  delayMicroseconds( _delay );
+
+  //__asm__ __volatile__ ("nop\n\t");
+  // clock
+  PORTC |= 0b00001000;
+}
+
+
 
 void writeNotification()
 {
@@ -112,7 +187,9 @@ void writeNotification()
       Serial.println( F("ACD3 - resistor R1 left side") );
       Serial.println( F("13 - 21 (remember this indicator cable)") );
       Serial.println( F("GND - GND (use the same USB power supply)") );
+      
       Serial.println( F("Press enter to start the test" ) );
+      Serial.println( F("type 'c' followed by enter to trigger an extra clock pulse" ) );
       break;
 
     case 1:
@@ -197,6 +274,17 @@ void writeNotification()
       // ar1=!r3=!or || !xor || !sub
       // ar2=!r4=!ld || !or || !xor || !add || !bcc
       // ar3=!r5=!ld || !and || !or || !add
+
+      // U14 pin 15 is low, 14-9 and 7 are high
+      // U15 pin 3(AR3), 9(AL) and 14(AR2) are high, 7(AR1), 12(AR0), 16(LD+OL) are low (5 and 18 are for mode and condition)
+      // LD =AL && !AR0 && !AR1 && AR2 && AR3     10011
+      // AND=AL && !AR0 && !AR1 && !AR2 && AR3    10001
+      // OR =AL && !AR0 && AR1 && AR2 && AR3      10111
+      // XOR=AL && !AR0 && AR1 && AR2 && !AR3     10110
+      // ADD=!AL && !AR0 && !AR1 && AR2 && AR3    00011
+      // SUB=!AL && AR0 && AR1 && !AR2 && !AR3    01100
+      // ST =!AL && !AR0 && !AR1 && !AR2 && !AR3  00000
+      // Bcc=AL && AR0 && !AR1 && AR2 && !AR3     11010
 
       writeLine();
       //XL YL IX EH EL OL LD PL PH
@@ -348,22 +436,12 @@ void sendInstruction( byte _opcode, byte _operand, int _delay /*= DELAY*/ )
   PORTC = pc;
   PORTB = pb;
 
-  delay( _delay );
-
-  // clock
-  PORTC |= 0b00001000;
-
-  delay( _delay );
-
-  // clock
-  PORTC &= 0b00110111;
-
-  delayMicroseconds( 100 );
+  clockTick( _delay );
 }
 
 void printBin( byte _var )
 {
-  for ( byte test = 0xff; test; test >>= 1 )
+  for ( byte test = 0x80; test; test >>= 1 )
   {
     Serial.write( (_var & test) == test ? '1' : '0');
   }
